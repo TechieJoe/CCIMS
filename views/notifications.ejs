@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .notifications-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .notification {
+      padding: 15px;
+      border-bottom: 1px solid #eaeaea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notification:last-child {
+      border-bottom: none;
+    }
+    .notification.unread {
+      background-color: #eef6ff;
+    }
+    .notification-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .notification-message {
+      margin: 0;
+      color: #666;
+    }
+    .mark-read-btn {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .mark-read-btn:hover {
+      background-color: #0056b3;
+    }
+    .notification-timestamp {
+      font-size: 0.9em;
+      color: #aaa;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <%- include('navBar') %>
+
+  <div class="notifications-container" id="notifications-container">
+    <% if (notifications && notifications.length > 0) { %>
+      <% notifications.forEach(notification => { %>
+        <div class="notification <%= notification.isRead ? '' : 'unread' %>">
+          <div>
+            <p class="notification-title"><%= notification.title %></p>
+            <p class="notification-message"><%= notification.message %></p>
+            <p class="notification-timestamp"><%= new Date(notification.createdAt).toLocaleString() %></p>
+          </div>
+          <% if (!notification.isRead) { %>
+            <button class="mark-read-btn" onclick="markAsRead('<%= notification._id %>')">Mark as Read</button>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p style="text-align: center; padding: 15px;">No notifications yet!</p>
+    <% } %>
+  </div>
+
+  <script>
+    async function markAsRead(notificationId) {
+      try {
+        const response = await fetch(`mark-read`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: notificationId }),
+        });
+
+        if (response.ok) {
+          // Reload the page to fetch updated notifications
+          location.reload();
+        } else {
+          console.error('Failed to mark notification as read');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  </script>
+</body>
+</html>

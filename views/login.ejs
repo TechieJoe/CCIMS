@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
+    <style>
+        /* Centering and styling the main login box */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            background-color: #f9f9f9;
+        }
+
+        .login-box {
+            width: 320px;
+            padding: 30px;
+            background-color: #eef3ec;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Styling the login header */
+        .login {
+            font-size: 24px;
+            color: #1b8e3b;
+            margin-bottom: 20px;
+        }
+
+        /* Styling input fields */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        /* Styling the checkbox label */
+        label {
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            margin-top: 10px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+        /* Styling the button */
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background-color: #1b8e3b;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #146c2d;
+        }
+
+        /* Styling links and additional text */
+        p {
+            font-size: 14px;
+            color: #555;
+            margin: 10px 0 0;
+        }
+
+        p:first-of-type {
+            margin-top: 15px;
+            text-align: left;
+            font-size: 12px;
+            color: #888;
+        }
+
+        a {
+            color: #1b8e3b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h3 class="login">Login</h3>
+        <form action="login" method="POST"> <!-- Correct action URL -->
+            <div>
+                <label for="email">Email:</label>
+                <input type="text" id="email" name="email" placeholder="Email" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Password" required>
+            </div>
+            <div>
+                <label for="remember">
+                    <input type="checkbox" id="remember" name="remember">
+                    Remember me
+                </label>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <div>
+            <p><a href="forgot-password.html">Forgot Password?</a></p>
+            <p>Don't have an account? <a href="signup">Sign Up</a></p> <!-- Updated signup link -->
+        </div>
+    </div>
+</body>
+</html>

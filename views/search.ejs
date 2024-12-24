@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Crops</title>
+  <style>
+    .crop-card {
+      border: 1px solid #ddd;
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+    }
+    .crop-card img {
+      width: 100px;
+      height: 100px;
+      margin-right: 16px;
+    }
+    .crop-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .no-results {
+      text-align: center;
+      font-size: 18px;
+      color: #888;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <%- include('navBar') %>
+
+  <!-- Search Results Section -->
+  <div id="results">
+    <% if (crops && crops.length > 0) { %>
+      <% crops.forEach(crop => { %>
+        <div class="crop-card">
+          <img src="<%= crop.imageUrl %>" alt="<%= crop.cropName %> Image">
+          <div class="crop-details">
+            <h2><%= crop.cropName %></h2>
+            <p><strong>Amount per Bag:</strong> <%= crop.amountPerBag %></p>
+            <p><strong>Quantity:</strong> <%= crop.quantity %> bags</p>
+            <p><strong>Farm:</strong> <%= crop.farmName %></p>
+            <p><strong>Location:</strong> <%= crop.city %>, <%= crop.state %></p>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p class="no-results">No results found.</p>
+    <% } %>
+  </div>
+
+</body>
+</html>

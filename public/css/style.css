@@ -1,0 +1,37 @@
+.container {
+    width: 80%;
+    margin: auto;
+    text-align: center;
+  }
+  
+  .crop-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
+  
+  .crop-card {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin: 20px;
+    width: 250px;
+    text-align: center;
+  }
+  
+  .crop-card img {
+    width: 100%;
+    height: auto;
+  }
+  
+  .crop-card button {
+    background-color: green;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .crop-card button:hover {
+    background-color: darkgreen;
+  }
+  

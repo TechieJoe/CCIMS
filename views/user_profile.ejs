@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Profile</title>
+  <link rel="stylesheet" href="/agric_app/public/css/style.css">
+  <style>
+    /* Add responsive styles */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .profile-section img {
+      max-width: 150px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .form-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+    .form-group label {
+      flex: 1;
+    }
+    .form-group input {
+      flex: 2;
+      padding: 5px;
+    }
+    .form-group .editable {
+      flex: 2;
+    }
+    .form-group .edit-icon, .save-btn {
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    .save-btn {
+      display: none;
+    }
+    .save-btn.cancel-btn {
+      background-color: #f44336;
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      .form-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .form-group label {
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('navBar') %>
+
+  <div class="container">
+
+    <!-- Profile Picture -->
+    <div class="profile-section">
+      <img id="profilePicture" src="<%= user.imageUrl %>" alt="Profile Picture" style="max-width: 150px; max-height: 150px;" />
+      <form id="uploadForm" enctype="multipart/form-data" method="POST" action="update-profile">
+        <input 
+          type="file" 
+          name="profilePicture" 
+          accept="image/*" 
+          required 
+          onchange="previewImage(event)" 
+          style="display: block; margin-top: 10px;" 
+        />
+        <button type="submit" style="margin-top: 10px;">Upload Profile Picture</button>
+      </form>
+        </div>
+
+    <hr />
+
+    <form id="updateProfileForm">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <span class="editable" id="nameDisplay"><%= user.name %></span>
+        <input type="text" id="nameInput" name="name" aria-label="Edit Name" style="display: none;" />
+        <span class="edit-icon" onclick="editField('name')">✎</span>
+        <button class="save-btn" id="nameSaveBtn" type="button" onclick="saveField('name')">Save</button>
+        <button class="save-btn cancel-btn" id="nameCancelBtn" type="button" onclick="cancelEdit('name')">Cancel</button>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <span class="editable" id="emailDisplay"><%= user.email %></span>
+        <input type="email" id="emailInput" name="email" aria-label="Edit Email" style="display: none;" />
+        <span class="edit-icon" onclick="editField('email')">✎</span>
+        <button class="save-btn" id="emailSaveBtn" type="button" onclick="saveField('email')">Save</button>
+        <button class="save-btn cancel-btn" id="emailCancelBtn" type="button" onclick="cancelEdit('email')">Cancel</button>
+      </div>
+    </form>
+
+    <hr />
+
+    <!-- Logout Button -->
+    <form action="logout" method="POST">
+      <button type="submit" class="logout-btn">Logout</button>
+    </form>
+  </div>
+
+  <script>
+    function previewImage(event) {
+      const profilePicture = document.getElementById("profilePicture");
+      profilePicture.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    function editField(field) {
+      const displayElement = document.getElementById(`${field}Display`);
+      const inputElement = document.getElementById(`${field}Input`);
+      const saveButton = document.getElementById(`${field}SaveBtn`);
+      const cancelButton = document.getElementById(`${field}CancelBtn`);
+
+      displayElement.style.display = 'none';
+      inputElement.style.display = 'block';
+      saveButton.style.display = 'inline-block';
+      cancelButton.style.display = 'inline-block';
+
+      inputElement.value = displayElement.textContent.trim();
+    }
+
+    function cancelEdit(field) {
+      const displayElement = document.getElementById(`${field}Display`);
+      const inputElement = document.getElementById(`${field}Input`);
+      const saveButton = document.getElementById(`${field}SaveBtn`);
+      const cancelButton = document.getElementById(`${field}CancelBtn`);
+
+      inputElement.value = '';
+      inputElement.style.display = 'none';
+      saveButton.style.display = 'none';
+      cancelButton.style.display = 'none';
+      displayElement.style.display = 'block';
+    }
+
+    function saveField(field) {
+      const displayElement = document.getElementById(`${field}Display`);
+      const inputElement = document.getElementById(`${field}Input`);
+      const saveButton = document.getElementById(`${field}SaveBtn`);
+      const cancelButton = document.getElementById(`${field}CancelBtn`);
+      const newValue = inputElement.value.trim();
+
+      if (newValue) {
+        fetch('update-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ field, value: newValue }),
+        })
+        .then(response => {
+          if (response.ok) {
+            displayElement.textContent = newValue;
+            inputElement.style.display = 'none';
+            saveButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            displayElement.style.display = 'block';
+          } else {
+            alert('Failed to update profile. Please try again.');
+          }
+        })
+        .catch(error => console.error('Error:', error));
+      } else {
+        alert('Value cannot be empty.');
+      }
+    }
+  </script>
+</body>
+</html>

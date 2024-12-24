@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
+  <style>
+    /* Embedded CSS for the navigation bar */
+    body {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    .Header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .Header nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-bar img {
+      height: 40px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 5px 10px;
+    }
+
+    .search-box input[type="search"] {
+      border: none;
+      outline: none;
+      padding: 5px;
+    }
+
+    .search-box img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .basket img {
+      height: 30px;
+      cursor: pointer;
+    }
+
+    .profile-pic {
+      height: 30px;
+      width: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    /* Result section styles */
+    .results {
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .result-item {
+      border-bottom: 1px solid #ddd;
+      padding: 15px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .result-item img {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      margin-right: 20px;
+      object-fit: cover;
+    }
+
+    .result-item h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #369510;
+    }
+
+    .result-item p {
+      margin: 5px 0;
+      color: #555;
+    }
+
+    .no-results {
+      font-style: italic;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header class="Header">
+    <nav>
+      <div class="nav-bar">
+        <a href="home"> <!-- Link to your home page or logo destination -->
+          <img src="/icons/logo-head.png" alt="CCIS">
+        </a>
+      </div>
+      
+      <div class="search-box">
+        <form action="search" method="get" style="display: flex; align-items: center;">
+          <input type="search" name="q" placeholder="Search" style="flex-grow: 1;">
+          <button type="submit" style="background: none; border: none; cursor: pointer;">
+            <img src="/icons/UI Icons-02.svg" alt="Search">
+          </button>
+        </form>
+      </div>
+  
+      <div class="basket">
+        <a href="cart"> <!-- Link to the basket or cart page -->
+          <img src="/icons/icons8-basket-90.png" alt="Basket">
+        </a>
+      </div>
+  
+      <div class="notification">
+        <a href="notification"> <!-- Link to the notification page -->
+          <img src="/icons/icons8-notification-bell-24.png" alt="notification">
+        </a>
+      </div>
+
+      <div class="profile">
+        <a id="profileLink" href="user_profile"> <!-- Link to the user profile page -->
+          <img src="/icons/icons8-profile-picture-48.png" alt="Profile" class="profile-pic">
+        </a>
+      </div>
+
+      <!-- Conditionally render either the become a farmer or upload link -->
+      <div class="farmer-actions">
+        <a id="farmerLink" href="farmer" style="display: none;">
+          <img src="BecomeFarmerIcon.svg" alt="Become a Farmer">
+        </a>
+        <a id="uploadLink" href="crops" style="display: none;">
+          <img src="Upload.svg" alt="Sell Crop">
+        </a>
+      </div>
+    </nav>
+  </header>
+      
+  <div class="results" id="resultsContainer">
+    <!-- Search results will appear here -->
+  </div>
+
+  <script>
+window.addEventListener('DOMContentLoaded', () => {
+  const farmerLink = document.getElementById('farmerLink'); // Link for "Become a Farmer"
+  const uploadLink = document.getElementById('uploadLink'); // Link for "Upload Crops"
+  const profileLink = document.getElementById('profileLink'); // Profile link
+
+  // Fetch the role from the server
+  fetch('check-role', {
+    credentials: 'include', // Ensure cookies are included automatically
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.role === 'farmer') {
+        // Show "Upload Crops" for farmers
+        uploadLink.style.display = 'block';
+        farmerLink.style.display = 'none'; // Hide "Become a Farmer" link
+
+        // Update the profile link to farmer's profile
+        profileLink.href = 'farmer_profile';
+      } else {
+        // Show "Become a Farmer" for regular users
+        farmerLink.style.display = 'block';
+        uploadLink.style.display = 'none'; // Hide "Upload Crops" link
+
+        // Update the profile link to user's profile
+        profileLink.href = 'user_profile';
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching user role:', error);
+    });
+   });
+
+    // Check for search query in URL and display results
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+
+    async function fetchSearchResults(query) {
+      if (!query) return;
+
+      try {
+        const response = await fetch(`search?q=${encodeURIComponent(query)}`, {
+          credentials: 'include' // Automatically include cookies
+        });
+        const data = await response.json();
+
+        const resultsContainer = document.getElementById('resultsContainer');
+        resultsContainer.innerHTML = ''; // Clear previous results
+
+        if (response.ok && data.results.length) {
+          data.results.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'result-item';
+            itemDiv.innerHTML = ` 
+              <h3>${item.farm_name || item.cropName}</h3>
+              <p><strong>Location:</strong> ${item.city || item.province_or_state || 'N/A'}</p>
+              <p><strong>Price:</strong> $${item.amountPerBag || 'N/A'}</p>
+            `;
+            resultsContainer.appendChild(itemDiv);
+          });
+        } else {
+          resultsContainer.innerHTML = '<p class="no-results">No results found.</p>';
+        }
+      } catch (error) {
+        console.error('Search Error:', error);
+        return null;
+      }
+    }
+
+    // Fetch results if there is a query
+    if (query) {
+      fetchSearchResults(query);
+    }
+  </script>
+</body>
+</html>

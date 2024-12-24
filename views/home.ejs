@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farm Crops</title>
+  <style>
+
+    body {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    background-color: #f1f1f1;
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .post-container{
+    display: flex;
+  }
+
+  .post-box{
+    background-color: #eef3ec;
+    margin: 10px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: auto;
+    width: 50%;
+
+  }
+
+  .image-style{
+    max-width: 100%;
+    height: auto;
+    width: 100%;
+    border-radius: 11.12px;  
+}
+
+  .user-details{
+    display: flex;
+    margin: 5px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .name-location p{
+    font-size: 7px;
+    margin-top: 0px;
+  }
+
+  .name-location h4{
+    font-size: 11px;
+    margin-bottom: 0px;
+  }
+
+  .price-tag{
+    margin-bottom: 3px;
+    margin-left: 5px;
+    margin-top: 10px;
+    margin-right: 5px;
+  }
+
+  .basket-icon{
+    height: 25px;
+  }
+
+  .buy-button{
+    background-color: #369510;
+    border: none;
+    color: white;
+    border-radius: 11.12em;
+    font-size: 12px;
+    padding: 5px 10px; 
+    align-items: right;
+
+  }
+
+  .buttide{
+    gap: 10px;
+    align-items: left;
+    justify-content: center;
+  }
+
+  button:hover {
+    background-color: #53a533;
+  }
+
+
+  </style>
+</head>
+<body>
+
+  <%- include('navBar') %>
+
+  <div class="post-container">
+
+    <% crops.forEach(crop => { %>
+
+      <div class="post-box">
+        <img src="<%= crop.imageUrl %>" alt="Crop Image" class="image-style">
+      <div class="user-details">
+
+        <a href="farmer_profile"> <img src="/icons/icons8-profile-picture-48.png" alt="profile" class="profile-pix"></a> 
+
+        <div class="name-location">
+          <h4> <%= crop.cropName %></h4>
+          <h4> <%= crop.farmId.farmName %> </h4>
+          <p> <%= crop.farmId.state %> <%= crop.farmId.LGA %></p>  
+        </div>
+
+        <a href="cart"> <img src="/icons/icons8-basket-90.png" alt="basket" class="basket-icon"> </a> 
+
+        <h4 class="price-tag"> 
+          <button class="buy-button" onclick="buyCrop('<%= crop.cropName %>', '<%= crop.amountPerBag %>')">Buy</button>
+        </h4>
+      </div>
+      <div class="buttide">
+        $<%= crop.amountPerBag %>
+         </div>
+      </div>
+    <% }); %>
+
+  </div>
+
+  <script>
+    function buyCrop(cropName, pricePerBag) {
+      // Redirect to the purchase page, passing crop name and price as URL parameters
+      const purchaseUrl = `purchase?cropName=${encodeURIComponent(cropName)}&pricePerBag=${encodeURIComponent(pricePerBag)}`;
+      window.location.href = purchaseUrl;  // Redirect to the purchase page
+    }
+  </script>
+</body>
+</html>

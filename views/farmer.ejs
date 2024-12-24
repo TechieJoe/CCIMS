@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add New Farmer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      margin: 20px;
+    }
+    h1 {
+      color: #4CAF50;
+      text-align: center;
+    }
+    .form-container {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .form-group button {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 4px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    .form-group button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+
+  <%- include('navBar') %>
+
+  <div class="form-container">
+    <form action="farmer" method="POST">
+      <div class="form-group">
+        <label for="farmName">Farm Name</label>
+        <input type="text" id="farmName" name="farmName" placeholder="Enter farm name" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" id="description" name="description" placeholder="Enter farm description" required>
+      </div>
+      <div class="form-group">
+        <label for="state">State</label>
+        <input type="text" id="state" name="state" placeholder="Enter state" required>
+      </div>
+      <div class="form-group">
+        <label for="LGA">LGA</label>
+        <input type="text" id="LGA" name="LGA" placeholder="Enter LGA" required>
+      </div>
+      <div class="form-group">
+        <button type="submit">Add Farmer</button>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farm Crops</title>
+  <link rel="stylesheet" href="/agric_app/public/css/style.css">
+  <style>
+    .crop-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+    }
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+    }
+    .cart-actions {
+      margin-top: 10px;
+    }
+    .recommendations-section {
+      margin-top: 20px;
+    }
+    .similar-crop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px;
+      width: 150px;
+      text-align: center;
+      border-radius: 5px;
+    }
+    .similar-crop img {
+      width: 100px;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+    <%- include('navBar') %>
+
+  <div class="container">
+    <div class="crop-list">
+      <% crops.forEach(crop => { %>
+        <div class="crop-card">
+          <img src="<%= crop.imageUrl %>" alt="Crop Image" style="width: 100px; height: auto;">
+          <p><strong>Name:</strong> <%= crop.cropName %></p>
+          <p><strong>Price per Bag:</strong> $<%= crop.amountPerBag %></p>
+          <p><strong>Farm Name:</strong> <%= crop.farmId.farmName %></p>
+          <p><strong>State:</strong> <%= crop.farmId.state %></p>
+          <p><strong>LGA:</strong> <%= crop.farmId.LGA %></p>
+
+          <div class="quantity-controls">
+            <button onclick="decrementQuantity('<%= crop.cropName %>')">-</button>
+            <input type="number" id="quantity_<%= crop.cropName %>" min="1" value="1" style="width: 50px;" />
+            <button onclick="incrementQuantity('<%= crop.cropName %>')">+</button>
+          </div>
+
+          <div class="cart-actions">
+            <button class="add-to-cart" onclick="addToCart('<%= crop.cropName %>', '<%= crop.amountPerBag %>')">Add to Cart</button>
+            <button class="buy" onclick="buyCrop('<%= crop.cropName %>', '<%= crop.amountPerBag %>')">Buy</button>
+          </div>
+
+          <div class="comments-section">
+            <h4>Comments and Ratings</h4>
+            <textarea id="comment_<%= crop.cropName %>" placeholder="Leave a comment..."></textarea>
+            <button onclick="submitComment('<%= crop.cropName %>')">Submit</button>
+            <div id="comments_<%= crop.cropName %>"></div>
+            <hr>
+            <p>Rate this farmer: 
+              <span onclick="rateFarmer('<%= crop.farmerId %>', 1)">⭐</span>
+              <span onclick="rateFarmer('<%= crop.farmerId %>', 2)">⭐</span>
+              <span onclick="rateFarmer('<%= crop.farmerId %>', 3)">⭐</span>
+              <span onclick="rateFarmer('<%= crop.farmerId %>', 4)">⭐</span>
+              <span onclick="rateFarmer('<%= crop.farmerId %>', 5)">⭐</span>
+            </p>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+<!-- Recommendations Section -->
+<div id="similar-crops" class="recommendations-section">
+  <h2>You might also like</h2>
+  <div id="similar-crops-list" class="crop-list">
+    <% similarCrops.forEach(similarCrop => { %>
+      <div class="similar-crop">
+        <img src="<%= similarCrop.imageUrl %>" alt="<%= similarCrop.cropName %>">
+        <h4><%= similarCrop.cropName %></h4>
+        <p>Price per Bag: $<%= similarCrop.amountPerBag %></p>
+        <p>Farm Name: <%= similarCrop.farmId.farmName %></p>
+        <div class="buttide">
+          <button 
+            class="buy-button" 
+            onclick="redirectToBuyPage('<%= similarCrop.cropName %>', '<%= similarCrop.amountPerBag %>')">
+            Buy
+          </button>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<script>
+  function redirectToBuyPage(cropName, pricePerBag) {
+    // Redirect to the buy page with crop details passed as URL parameters
+    const buyPageUrl = `purchase?cropName=${encodeURIComponent(cropName)}&pricePerBag=${encodeURIComponent(pricePerBag)}`;
+    window.location.href = buyPageUrl; // Redirect to the buy page
+  }
+</script>
+
+  <script>
+    function incrementQuantity(cropName) {
+      const quantityElement = document.getElementById(`quantity_${cropName}`);
+      quantityElement.value = parseInt(quantityElement.value) + 1;
+    }
+
+    function decrementQuantity(cropName) {
+      const quantityElement = document.getElementById(`quantity_${cropName}`);
+      const currentValue = parseInt(quantityElement.value);
+      if (currentValue > 1) {
+        quantityElement.value = currentValue - 1;
+      }
+    }
+
+    async function addToCart(cropName, pricePerBag) {
+      const quantityElement = document.getElementById(`quantity_${cropName}`);
+      const quantity = parseInt(quantityElement.value, 10);
+
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Please enter a valid quantity.');
+        return;
+      }
+
+      const totalPrice = pricePerBag * quantity;
+      const grandTotal = totalPrice;
+
+      try {
+        const response = await fetch('add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cropName, quantity, pricePerBag, totalPrice, grandTotal })
+        });
+
+        if (response.ok) {
+          alert(`${cropName} has been added to your cart with a total price of $${totalPrice}.`);
+        } else {
+          const errorData = await response.json();
+          alert(`Error: ${errorData.message}`);
+        }
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        alert('An error occurred while adding the item to your cart.');
+      }
+    }
+
+    async function buyCrop(cropName, pricePerBag) {
+      const quantityElement = document.getElementById(`quantity_${cropName}`);
+      const quantity = parseInt(quantityElement.value, 10);
+
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Please enter a valid quantity.');
+        return;
+      }
+
+      const totalPrice = pricePerBag * quantity;
+      const grandTotal = totalPrice;
+
+      try {
+        const response = await fetch('buy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: [{ cropName, quantity, pricePerBag, totalPrice }],
+            grandTotal
+          })
+        });
+
+        if (response.ok) {
+          const responseData = await response.json();
+          window.location.href = responseData.paymentUrl;
+        } else {
+          const errorData = await response.json();
+          alert(`Error: ${errorData.message}`);
+        }
+      } catch (error) {
+        console.error('Error during purchase:', error);
+        alert('An error occurred while processing your purchase.');
+      }
+    }
+
+    async function loadSimilarCrops(cropName) {
+      try {
+        const response = await fetch(`/crops/similar/${cropName}`);
+        if (response.ok) {
+          const { similarCrops } = await response.json();
+          displaySimilarCrops(similarCrops);
+        } else {
+          console.error('Failed to load similar crops');
+        }
+      } catch (error) {
+        console.error('Error fetching similar crops:', error);
+      }
+    }
+
+    function displaySimilarCrops(similarCrops) {
+      const similarCropsList = document.getElementById('similar-crops-list');
+      similarCropsList.innerHTML = '';
+      similarCrops.forEach(crop => {
+        const cropElement = document.createElement('div');
+        cropElement.classList.add('similar-crop');
+        cropElement.innerHTML = `
+          <img src="${crop.imageUrl}" alt="${crop.cropName}">
+          <h4>${crop.cropName}</h4>
+          <p>Price per Bag: $${crop.amountPerBag}</p>
+          <p>Farm Name: ${crop.farmName}</p>
+        `;
+        similarCropsList.appendChild(cropElement);
+      });
+    }
+
+    // Call loadSimilarCrops on page load for each crop
+    document.addEventListener('DOMContentLoaded', () => {
+      // Assuming you have a crop name available here, call the function for each crop
+      const cropName = '<%= crops[0].cropName %>'; // Replace with dynamic crop name as needed
+      loadSimilarCrops(cropName);
+    });
+  </script>
+</body>
+</html>
