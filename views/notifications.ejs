@@ -67,10 +67,15 @@
       <% notifications.forEach(notification => { %>
         <div class="notification <%= notification.isRead ? '' : 'unread' %>">
           <div>
-            <p class="notification-title"><%= notification.title %></p>
+            <b><p class="notification-title"><%= notification.title %></p></b>
+            <br/>
             <p class="notification-message"><%= notification.message %></p>
+            <br/>
             <p class="notification-timestamp"><%= new Date(notification.createdAt).toLocaleString() %></p>
           </div>
+          <% if (notification.message.image) { %>
+            <img src="<%= notification.message.image %>" alt="Crop Image" style="width: 50px; height: 50px; border-radius: 5px; margin-left: 10px;">
+          <% } %>
           <% if (!notification.isRead) { %>
             <button class="mark-read-btn" onclick="markAsRead('<%= notification._id %>')">Mark as Read</button>
           <% } %>

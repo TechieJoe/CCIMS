@@ -3,56 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Search Crops</title>
+  <title>Search</title>
   <style>
-    .crop-card {
-      border: 1px solid #ddd;
-      padding: 16px;
-      margin: 16px 0;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
     }
-    .crop-card img {
-      width: 100px;
-      height: 100px;
-      margin-right: 16px;
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
     }
-    .crop-details {
-      display: flex;
-      flex-direction: column;
-    }
-    .no-results {
+    h1 {
       text-align: center;
-      font-size: 18px;
-      color: #888;
+      color: #333;
+    }
+    .search-form {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .search-form input {
+      width: 70%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .search-form button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #28a745;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .search-form button:hover {
+      background-color: #218838;
+    }
+    .results {
       margin-top: 20px;
+    }
+    .results h2 {
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .result-item {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    .result-item h3 {
+      margin: 0;
+      color: #333;
+    }
+    .result-item p {
+      margin: 5px 0;
+      color: #666;
     }
   </style>
 </head>
 <body>
-
-  <%- include('navBar') %>
-
-  <!-- Search Results Section -->
-  <div id="results">
-    <% if (crops && crops.length > 0) { %>
-      <% crops.forEach(crop => { %>
-        <div class="crop-card">
-          <img src="<%= crop.imageUrl %>" alt="<%= crop.cropName %> Image">
-          <div class="crop-details">
-            <h2><%= crop.cropName %></h2>
-            <p><strong>Amount per Bag:</strong> <%= crop.amountPerBag %></p>
-            <p><strong>Quantity:</strong> <%= crop.quantity %> bags</p>
-            <p><strong>Farm:</strong> <%= crop.farmName %></p>
-            <p><strong>Location:</strong> <%= crop.city %>, <%= crop.state %></p>
-          </div>
+  <div class="container">
+    <h1>Search Crops and Farmers</h1>
+    <form class="search-form" method="get" action="search">
+      <input type="text" name="q" placeholder="Enter crop or farmer details..." required>
+      <button type="submit">Search</button>
+    </form>
+    <% if (result && result.crops.length > 0) { %>
+      <h2>Crops</h2>
+      <% result.crops.forEach(crop => { %>
+        <div class="result-item">
+          <h3><%= crop.cropName %></h3>
+          <p><strong>Quantity:</strong> <%= crop.quantity %> bags</p>
+          <p><strong>Price per bag:</strong> <%= crop.amountPerBag %></p>
+          <p><strong>Farm:</strong> <%= crop.farmId.farmName %> (<%= crop.farmId.state %>, <%= crop.farmId.LGA %>)</p>
+          <img src="<%= crop.imageUrl %>" alt="<%= crop.cropName %>" style="width: 100%; max-width: 200px; border-radius: 5px;">
         </div>
       <% }) %>
     <% } else { %>
-      <p class="no-results">No results found.</p>
+      <p>No crops found for your search query.</p>
     <% } %>
-  </div>
-
+      </div>
 </body>
 </html>

@@ -60,17 +60,23 @@ export class FarmersService {
       .populate('farmId'); // Populate the farm details
   }
 
+  async findCropsAndDelete(farmId: string, cropName: string) {
+    return this.cropModel
+      .findOne({ farmId, cropName }) // Query based on both farmId and cropName
+      .populate('farmId'); // Populate the farm details
+  }
+
   async findAllCropsByFarmer(farmerId: string): Promise<createCrop[]> {  
     return this.cropModel.find({ farmId: farmerId }).exec();  
   } 
 
-  async deleteCrop(cropId: string): Promise<void> {
-    const result = await this.cropModel.deleteOne({ _id: cropId }).exec();
+  async deleteCrop(farmId: string, cropName: string): Promise<void> {
+    const result = await this.cropModel.deleteOne({ farmId, cropName }).exec();
     if (result.deletedCount === 0) {
-      throw new NotFoundException(`Crop with ID ${cropId} not found`);
+      throw new NotFoundException(`Crop with name ${cropName} not found for the specified farmer`);
     }
   }
-  
+
     async getUserProfile(userId: string) {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
@@ -126,6 +132,36 @@ export class FarmersService {
     return await user.save();
   }
 
-  
+  async search(query: string): Promise<{ crops: any[], farmers: any[] }> {
+    const searchQuery = new RegExp(query, 'i'); // Case-insensitive search
+
+    // Search crops by cropName and join farmer details
+    const crops = await this.cropModel
+      .find({ cropName: searchQuery })
+      .populate({
+        path: 'farmId',
+        model: 'farmer',
+        select: 'farmName state LGA', // Select farm details to return
+      })
+      .exec();
+
+    // Search farmers by farmName or location (state or LGA)
+    const farmers = await this.farmerModel
+      .find({
+        $or: [
+          { farmName: searchQuery },
+          { state: searchQuery },
+          { LGA: searchQuery },
+        ],
+      })
+      .populate({
+        path: 'crops',
+        model: 'createCrop',
+        select: 'cropName quantity amountPerBag imageUrl', // Include imageUrl in the selection
+      })
+      .exec();
+
+    return { crops, farmers };
+  }  
 }
 

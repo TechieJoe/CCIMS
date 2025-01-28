@@ -101,12 +101,18 @@
             text-decoration: underline;
         }
 
+        /* Styling error message */
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="login-box">
         <h3 class="login">Login</h3>
-        <form action="login" method="POST"> <!-- Correct action URL -->
+        <form id="loginForm">
             <div>
                 <label for="email">Email:</label>
                 <input type="text" id="email" name="email" placeholder="Email" required>
@@ -123,10 +129,49 @@
             </div>
             <button type="submit">Login</button>
         </form>
+        <div id="errorContainer" class="error-message"></div> <!-- Error message container -->
         <div>
             <p><a href="forgot-password.html">Forgot Password?</a></p>
-            <p>Don't have an account? <a href="signup">Sign Up</a></p> <!-- Updated signup link -->
+            <p>Don't have an account? <a href="signup">Sign Up</a></p>
         </div>
     </div>
+
+    <script>
+const loginForm = document.getElementById('loginForm');
+const errorContainer = document.getElementById('errorContainer');
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault(); // Prevent default form submission
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  errorContainer.textContent = ''; // Clear previous errors
+
+  try {
+    const response = await fetch('login', { // Ensure the correct route
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      // Display error message from the server
+      errorContainer.textContent = result.message || 'Invalid login credentials.';
+    } else {
+      const result = await response.json();
+      // Redirect to the URL provided by the server
+      window.location.href = result.redirectUrl;
+    }
+  } catch (error) {
+    // Handle fetch errors
+    console.error('Error:', error);
+    errorContainer.textContent = 'A network error occurred. Please try again.';
+  }
+});
+    </script>
 </body>
 </html>

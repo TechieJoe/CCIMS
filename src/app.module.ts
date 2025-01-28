@@ -15,7 +15,7 @@ import { CartService } from './cart/cart.service';
     imports: [ConfigModule],  // Import the ConfigModule
     inject: [ConfigService],  // Inject ConfigService to access environment variables
     useFactory: (configService: ConfigService) => ({
-      uri: `mongodb://${configService.get<string>('DATABASE_HOST')}:${configService.get<string>('DATABASE_PORT')}/${configService.get<string>('DATABASE_NAME')}`,
+      uri: configService.get<string>('MONGO_URI'), // Use MONGODB_URI directly
     }),
   }),
     FarmAppModule,  

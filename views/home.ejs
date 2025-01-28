@@ -9,33 +9,37 @@
     body {
     font-family: 'Bricolage Grotesque', sans-serif;
     background-color: #f1f1f1;
-    margin: 10px;
-    padding: 10px;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
   }
 
   .post-container{
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columns */
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
   }
 
   .post-box{
     background-color: #eef3ec;
-    margin: 10px;
-    padding: 40px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     border-radius: 18px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    max-width: 100%;
-    height: auto;
-    width: 50%;
-
   }
 
   .image-style{
-    max-width: 100%;
-    height: auto;
     width: 100%;
+    height: 0;
+    padding-bottom: 100%; /* 1:1 Aspect Ratio */
+    object-fit: cover;
     border-radius: 11.12px;  
+    background-size: cover;
+    background-position: center;
 }
 
   .user-details{
@@ -46,12 +50,12 @@
   }
 
   .name-location p{
-    font-size: 7px;
+    font-size: 12px;
     margin-top: 0px;
   }
 
   .name-location h4{
-    font-size: 11px;
+    font-size: 14px;
     margin-bottom: 0px;
   }
 
@@ -64,6 +68,7 @@
 
   .basket-icon{
     height: 25px;
+    cursor: pointer;
   }
 
   .buy-button{
@@ -87,6 +92,23 @@
     background-color: #53a533;
   }
 
+  @media (max-width: 1200px) {
+    .post-container {
+      grid-template-columns: repeat(3, 1fr); /* 3 columns for medium screens */
+    }
+  }
+
+  @media (max-width: 768px) {
+    .post-container {
+      grid-template-columns: repeat(2, 1fr); /* 2 columns for small screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .post-container {
+      grid-template-columns: 1fr; /* 1 column for extra small screens */
+    }
+  }
 
   </style>
 </head>
@@ -99,10 +121,12 @@
     <% crops.forEach(crop => { %>
 
       <div class="post-box">
-        <img src="<%= crop.imageUrl %>" alt="Crop Image" class="image-style">
+        <div class="image-style" style="background-image: url('<%= crop.imageUrl %>');"></div>
       <div class="user-details">
 
-        <a href="farmer_profile"> <img src="/icons/icons8-profile-picture-48.png" alt="profile" class="profile-pix"></a> 
+        <a href="farmer_profile">
+          <img src="<%= crop.farmId.profilePicture ? '/' + crop.farmId.profilePicture : '/icons/icons8-profile-picture-48.png' %>" alt="profile" class="profile-pix">
+        </a>
 
         <div class="name-location">
           <h4> <%= crop.cropName %></h4>
@@ -110,7 +134,7 @@
           <p> <%= crop.farmId.state %> <%= crop.farmId.LGA %></p>  
         </div>
 
-        <a href="cart"> <img src="/icons/icons8-basket-90.png" alt="basket" class="basket-icon"> </a> 
+        <img src="/icons/icons8-basket-90.png" alt="basket" class="basket-icon" onclick="addToCart('<%= crop.cropName %>', '<%= crop.amountPerBag %>', '<%= crop.imageUrl %>')">
 
         <h4 class="price-tag"> 
           <button class="buy-button" onclick="buyCrop('<%= crop.cropName %>', '<%= crop.amountPerBag %>')">Buy</button>
@@ -129,6 +153,26 @@
       // Redirect to the purchase page, passing crop name and price as URL parameters
       const purchaseUrl = `purchase?cropName=${encodeURIComponent(cropName)}&pricePerBag=${encodeURIComponent(pricePerBag)}`;
       window.location.href = purchaseUrl;  // Redirect to the purchase page
+    }
+
+    async function addToCart(cropName, pricePerBag, imageUrl) {
+      try {
+        const response = await fetch('add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ cropName, quantity: 1, pricePerBag, imageUrl }),
+        });
+
+        if (response.ok) {
+          alert('Item added to cart!');
+        } else {
+          throw new Error('Failed to add item to cart');
+        }
+      } catch (error) {
+        alert(error.message);
+      }
     }
   </script>
 </body>

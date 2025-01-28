@@ -14,9 +14,6 @@
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    .profile-info, .inventory-section, .ratings-section {
-      margin-bottom: 20px;
-    }
     .profile-picture {
       text-align: center;
       margin-bottom: 20px;
@@ -32,36 +29,55 @@
       text-align: center;
       margin-top: 10px;
     }
-    .inventory-card, .review-card {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin: 10px 0;
+    .upload-form button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 15px;
       border-radius: 5px;
-      display: flex;
-      align-items: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
     }
-    .inventory-card img, .review-card img {
-      width: 100px;
-      height: auto;
-      border-radius: 5px;
-      margin-right: 15px;
+    .upload-form button:hover {
+      background-color: #0056b3;
     }
-    .inventory-button-container {
+    .inventory-button {
+      display: block;
+      width: 100%;
       text-align: center;
       margin-top: 20px;
     }
-    .inventory-button-container button {
+    .inventory-button a {
       background-color: #28a745;
       color: white;
-      border: none;
       padding: 10px 20px;
       border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    .inventory-button a:hover {
+      background-color: #218838;
+    }
+    .logout-button {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .logout-button button {
+      background-color: #dc3545;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: none;
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    .inventory-button-container button:hover {
-      background-color: #218838;
+    .logout-button button:hover {
+      background-color: #c82333;
     }
   </style>
 </head>
@@ -71,12 +87,12 @@
 
   <div class="profile-container">
     <h1>Welcome, <%= profile.name %>!</h1>
-    
+
     <!-- Profile Picture -->
     <div class="profile-picture">
-      <img src="<%= profile.profilePicture || '/agric_app/public/images/default-profile.png' %>" alt="Profile Picture">
-      <form action="update-profile" method="POST" enctype="multipart/form-data" class="upload-form">
-        <input type="file" name="profilePicture" accept="image/*" required>
+      <img src="<%= profile.profilePicture || '/agric_app/public/images/default-profile.png' %>" alt="Profile Picture" id="profilePicture">
+      <form action="update-profile-picture" method="POST" enctype="multipart/form-data" class="upload-form">
+        <input type="file" name="profilePicture" accept="image/*" required onchange="previewImage(event)">
         <button type="submit">Upload Picture</button>
       </form>
     </div>
@@ -87,53 +103,26 @@
       <p><strong>Email:</strong> <%= profile.email %></p>
       <p><strong>Farm Name:</strong> <%= profile.farmDetails?.farmName || 'N/A' %></p>
       <p><strong>Location:</strong> <%= profile.farmDetails?.state %>, <%= profile.farmDetails?.LGA %></p>
-      <p><strong>Total Sales:</strong> $<%= profile.totalSales || '0.00' %></p>
-      <p><strong>Average Rating:</strong> <%= profile.averageRating || 'No ratings yet' %> ⭐</p>
-    </div>
-
-    <!-- Farmer's Inventory -->
-    <div class="inventory-section">
-      <h2>Your Inventory</h2>
-      <% if (profile.farmDetails?.crops && profile.farmDetails.crops.length > 0) { %>
-        <% profile.farmDetails.crops.forEach(crop => { %>
-          <div class="inventory-card">
-            <img src="<%= crop.imageUrl || '/agric_app/public/images/crop-placeholder.png' %>" alt="<%= crop.name %>">
-            <div>
-              <p><strong>Name:</strong> <%= crop.name %></p>
-              <p><strong>Price per Bag:</strong> $<%= crop.pricePerBag || '0.00' %></p>
-              <p><strong>Available Bags:</strong> <%= crop.availableBags || 0 %></p>
-            </div>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <p>No inventory available.</p>
-      <% } %>
-    </div>
-
-    <!-- Ratings Section -->
-    <div class="ratings-section">
-      <h2>Ratings & Feedback</h2>
-      <% if (profile.reviews && profile.reviews.length > 0) { %>
-        <% profile.reviews.forEach(review => { %>
-          <div class="review-card">
-            <img src="/agric_app/public/images/customer-placeholder.png" alt="Customer">
-            <div>
-              <p><strong>Customer:</strong> <%= review.customerName %></p>
-              <p><strong>Rating:</strong> <%= review.rating %> ⭐</p>
-              <p><strong>Comment:</strong> <%= review.comment %></p>
-            </div>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <p>No ratings or feedback available.</p>
-      <% } %>
     </div>
 
     <!-- Inventory Button -->
-    <div class="inventory-button-container">
-      <button onclick="window.location.href='inventory'">Manage Inventory</button>
+    <div class="inventory-button">
+      <a href="inventory">Go to Inventory</a>
+    </div>
+
+    <!-- Logout Button -->
+    <div class="logout-button">
+      <form action="logout" method="POST">
+        <button type="submit">Logout</button>
+      </form>
     </div>
   </div>
 
+  <script>
+    function previewImage(event) {
+      const profilePicture = document.getElementById("profilePicture");
+      profilePicture.src = URL.createObjectURL(event.target.files[0]);
+    }
+  </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";  
 import mongoose, { Types, Document } from "mongoose";  
-import { Roles } from "src/utils/ROLES/roles";  
+import { Roles } from "../ROLES/roles";  
 import { farmer } from "./farmers";
 
 @Schema()  

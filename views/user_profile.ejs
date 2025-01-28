@@ -65,7 +65,7 @@
 
     <!-- Profile Picture -->
     <div class="profile-section">
-      <img id="profilePicture" src="<%= user.imageUrl %>" alt="Profile Picture" style="max-width: 150px; max-height: 150px;" />
+      <img id="profilePicture" src="<%= user.profilePicture ? user.profilePicture : '/agric_app/public/images/default-profile.png' %>" alt="Profile Picture" style="max-width: 150px; max-height: 150px;" />
       <form id="uploadForm" enctype="multipart/form-data" method="POST" action="update-profile">
         <input 
           type="file" 
@@ -157,13 +157,15 @@
           },
           body: JSON.stringify({ field, value: newValue }),
         })
-        .then(response => {
-          if (response.ok) {
+        .then(response => response.json())
+        .then(data => {
+          if (data.message === 'Profile updated successfully.') {
             displayElement.textContent = newValue;
             inputElement.style.display = 'none';
             saveButton.style.display = 'none';
             cancelButton.style.display = 'none';
             displayElement.style.display = 'block';
+            window.location.href = data.redirectUrl; // Redirect to the profile page
           } else {
             alert('Failed to update profile. Please try again.');
           }

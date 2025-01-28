@@ -3,26 +3,36 @@ import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { extname } from 'path';
-import { diskStorage } from 'multer';
-import { FarmersService } from 'src/services/farmers.service';
-import { userService } from 'src/services/users.service';
-import { createCropDto } from 'src/utils/dtos/createCrop';
-import { loginDto } from 'src/utils/dtos/login';
-import { signupDto } from 'src/utils/dtos/signup';
-import { Roles } from 'src/utils/ROLES/decorator';
-import { RolesGuard } from 'src/utils/ROLES/guard';
-import { AddCartItemDto, UpdateItemDto } from 'src/utils/dtos/cart';
-import { AuthService } from 'src/services/auth.service';
-import { OrderDto } from 'src/utils/dtos/order';
-import { v4 as uuidv4 } from 'uuid';
+import { FarmersService } from '../services/farmers.service';
+import { userService } from '../services/users.service';
+import { createCropDto } from '../utils/dtos/createCrop';
+import { loginDto } from '../utils/dtos/login';
+import { signupDto } from '../utils/dtos/signup';
+import { Roles } from '../utils/ROLES/decorator';
+import { RolesGuard } from '../utils/ROLES/guard';
+import { AddCartItemDto, UpdateItemDto } from '../utils/dtos/cart';
+import { OrderDto } from '../utils/dtos/order';
+import { farmer } from '../utils/schemas/farmers';
+import { UpdateProfileDto } from '../utils/dtos/profile';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { CreateFarmerDto } from 'src/utils/dtos/farmers';
-import { farmer } from 'src/utils/schemas/farmers';
-import { UpdateProfileDto } from 'src/utils/dtos/profile';
+import { v2 as cloudinary } from 'cloudinary';
+import { ConfigService } from '@nestjs/config';
+
+
 
 @Controller('farm-app')
 export class FarmAppController {
 
-  constructor(@Inject("USER_SERVICE") private userService: userService, @Inject("FARMERS_SERVICE") private farmerService: FarmersService, @Inject("AUTH_SERVICE") private AuthService: AuthService){}
+  constructor(@Inject("USER_SERVICE") private userService: userService, @Inject("FARMERS_SERVICE") private farmerService: FarmersService, private configService: ConfigService){
+
+    cloudinary.config({
+      cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
+      api_key: this.configService.get('CLOUDINARY_API_KEY'),
+      api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
+    });
+
+  }
 
   @Render('signup')
   @Get('signup')
@@ -31,68 +41,74 @@ export class FarmAppController {
 
   @Post('signup')
   async signup(
-    @Body() signupDto: signupDto, 
-    @Res() res: Response, 
+    @Body() signupDto: signupDto,
+    @Res() res: Response,
     @Session() session: Record<string, any>
   ) {
     try {
       // Register the new user
       const user = await this.userService.register(signupDto);
-        
+  
       // Store user information and role in session
       session.userId = user._id;
       session.email = user.email;
       session.role = user.role; // Store role (e.g., 'farmer' or 'user')
-        
+  
       console.log('Session after signup:', session);
-        
-      // Return the user data with a success response
-      return res.status(201).json({
-        message: 'Signup successful',
-        user
-      });
+  
+      // Redirect the user to the home page after successful signup
+      return res.redirect('home');
     } catch (error) {
       // Handle errors and return a bad request response
       return res.status(400).json({ message: error.message });
     }
   }
-
+  
   @Render('login')
   @Get('/login')
   log(){}
 
     
-  @Post('/login')
+  @Post('login')
   async login(
-    @Request() req, 
-    @Body() loginDto: loginDto, 
-    @Session() session: Record<string, any>, 
-    @Res() res: Response
+    @Request() req,
+    @Body() loginDto: loginDto,
+    @Session() session: Record<string, any>,
+    @Res() res: Response,
   ) {
-      const { email, password } = loginDto;
+    const { email, password } = loginDto;
+  
+    try {
       const user = await this.userService.validateUser(email, password);
-      
+  
       if (user) {
         // Store user information and role in session
         session.userId = user._id;
         session.email = user.email;
-        session.role = user.role; // Store role in session
-
+        session.role = user.role;
+  
         if (user.farmId) {
           session.farmId = user.farmId;
-        }    
-
-        console.log(session.farmId)
-        
+        }
+  
         console.log('Session after login:', session);
-        
+  
         // Redirect to home page after login
-        return res.redirect('home');
-      } else {
-        throw new UnauthorizedException('Invalid credentials');
-    }  
+        return res.status(200).json({ message: 'Login successful', redirectUrl: 'home' });
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        console.log(error);
+  
+        // Send the error message as a JSON response
+        return res.status(401).json({ message: 'Invalid login credentials' });
+      }
+  
+      // Handle unexpected errors
+      return res.status(500).json({ message: 'An unexpected error occurred' });
+    }
   }
-
+    
   @Get('check-role')
   @UseGuards(AuthGuard('session'))
   checkUserRole(@Request() req) {
@@ -137,12 +153,27 @@ export class FarmAppController {
   async farmers() {}
 
   @Post('farmer')
-  async upgradeToFarmer(@Body() CreateFarmerDto: CreateFarmerDto, @Request() req) {
-    const userId = req.session.userId // Get user ID from the session
-    console.log(userId)
-    return this.farmerService.upgradeToFarmer( userId, CreateFarmerDto);
+  async upgradeToFarmer(
+    @Body() CreateFarmerDto: CreateFarmerDto,
+    @Request() req,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID from the session
+      const userId = req.session.userId;
+      console.log(userId);
+  
+      // Upgrade the user to a farmer
+      await this.farmerService.upgradeToFarmer(userId, CreateFarmerDto);
+  
+      // Redirect the user to the home page after successful upgrade
+      return res.redirect('home');
+    } catch (error) {
+      // Handle errors and return a bad request response
+      return res.status(400).json({ message: error.message });
+    }
   }
-
+  
   @Render('inventory')
   @Get('inventory')
   async getInventory(@Request() req) {
@@ -157,83 +188,111 @@ export class FarmAppController {
 
   @Render('crops')
   @Get('crops')
-  async crops() {}
-
+  async getCrops() {}
+  
   @Post('post-crop')
   @UseGuards(AuthGuard('session')) // Protect route using passport-session
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/crops', // Save the image in the correct folder
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
+      storage: new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+          folder: 'crops', // Cloudinary folder
+          resource_type: 'image', // Ensures only images are handled
+          format: async () => 'png', // Optional: Always store images as PNG
+          public_id: (req, file) =>
+            `${Date.now()}_${file.originalname.split('.')[0]}`, // Custom public ID
+        } as any, // Fix type-checking
       }),
       limits: { fileSize: 5 * 1024 * 1024 }, // Max file size: 5MB
-    }),
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed!'), false);
+        }
+      },
+    })
   )
   async postCrop(
     @Request() req, 
     @UploadedFile() file: Express.Multer.File, 
-    @Body() createCropDto: createCropDto
+    @Body() createCropDto: createCropDto, 
+    @Res() res: Response
   ) {
-    const farmId = req.session.farmId;
-    console.log(farmId)
-    const imageUrl = `/uploads/crops/${file.filename}`; // Correct image URL
-    return this.farmerService.createCrop(farmId, createCropDto, imageUrl);
-  }
+    const farmId = req.session.farmId; // Retrieve farm ID from the session
   
-  @Delete('delete_crops')
-  async deleteCrop(@Body('cropId') cropId: string) {
-    if (!cropId) {
-      throw new BadRequestException('Crop ID is required');
-    }
-    return this.farmerService.deleteCrop(cropId);
-  }
-
-  @Render('search')
-  @Get('search')
-  async search(@Query('q') query: string, @Res() res: Response) {
-    if (!query) {
-      return { errorMessage: 'Search query is required', crops: [] };
+    if (!farmId) {
+      return res
+        .status(400)
+        .json({ message: 'Invalid session. Please log in again.' });
     }
   
     try {
-      const { crops } = await this.userService.searchAll(query);
+      let imageUrl = null;
   
-      if (!crops.length) {
-        return { errorMessage: 'No results found', crops: [] };
+      if (file) {
+        // Get the secure URL of the uploaded image from Cloudinary
+        imageUrl = file.path;
       }
   
-      const formattedCrops = crops.map((crop) => {
-        const farmer = crop.farmId as farmer;
-        return {
-          cropName: crop.cropName,
-          amountPerBag: crop.amountPerBag,
-          quantity: crop.quantity,
-          imageUrl: crop.imageUrl,
-          farmName: farmer?.farmName || 'Unknown',
-          state: farmer?.state || 'Unknown',
-          city: farmer?.LGA || 'Unknown',
-        };
-      });
+      // Call the service to create the crop
+      const crop = await this.farmerService.createCrop(farmId, createCropDto, imageUrl);
   
-      console.log(formattedCrops)
-      return { crops: formattedCrops };
+      // Redirect to the home page upon success
+      return res.redirect('home');
     } catch (error) {
-      console.error('Error during search:', error); // Log the actual error
-      res.status(500).render('search', { crops: [], error: 'An error occurred. Please try again later.' });
+      console.error('Error creating crop:', error);
+      return res.status(500).json({ message: 'Error creating crop', error: error.message });
     }
   }
     
+  @Delete('delete_crops')
+  async deleteCrop(@Request() req, @Body('cropName') cropName: string, @Res() res: Response) {
+    if (!cropName) {
+      return res.status(400).json({ message: 'Crop Name is required' });
+    }
+  
+    const farmId = req.session.farmId;
+    if (!farmId) {
+      return res.status(400).json({ message: 'Invalid session. Please log in again.' });
+    }
+  
+    try {
+      await this.farmerService.deleteCrop(farmId, cropName);
+      return res.status(200).json({ message: 'Crop deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting crop:', error);
+      return res.status(500).json({ message: 'Error deleting crop', error: error.message });
+    }
+  }
+  
+  @Render('search') // Renders the search.ejs file
+  @Get('search')
+  async search(@Query('q') query: string) {
+    if (!query) {
+      return { message: 'Please provide a search query' };
+    }
+  
+    const result = await this.farmerService.search(query);
+    console.log(result); // Ensure this logs the correct result
+    return { result }; // Pass the result to the frontend
+  }
+
+  
   @Render('cart')
   @Get('cart')
   async getCart(@Request() req) {
-      const userId = req.session.userId;
+    const userId = req.session.userId;
+    try {
       const cart = await this.userService.getCart(userId);
       return { cart };
+    } catch (error) {
+      if (error.status === 404) {
+        return { cart: { items: [], totalPrice: 0 } };
+      }
+      throw error;
+    }
   }
 
   
@@ -369,10 +428,11 @@ export class FarmAppController {
   @Get('notification')
   async getNotifications(@Request() req) {
     const userId = req.session.userId;
+    const farmId = req.session.farmId;
     console.log('userID' + userId)
-    const notifications = await this.userService.getNotifications(userId);
+    const notifications = await this.userService.getNotifications(userId, farmId);
     console.log(notifications)
-    return { notifications };
+    return { notifications: notifications.userNotifications.concat(notifications.farmerNotifications) };
   }
   
   @Patch(':id/mark-read')
@@ -380,80 +440,142 @@ export class FarmAppController {
     return await this.userService.markAsRead(notificationId);
   }
 
+  @Get('unread-notifications-count')
+  async getUnreadNotificationsCount(@Request() req) {
+    const userId = req.session.userId;
+    const farmId = req.session.farmId;
+    const count = await this.userService.getUnreadNotificationsCount(userId, farmId);
+    return { count };
+  }
+
 
   @Post('update-profile')
   @UseInterceptors(
-    FileInterceptor('profilePicture', {
-      storage: diskStorage({
-        destination: 'uploads/profile-pictures',
-        filename: (req, file, cb) => {
-          const fileExt = extname(file.originalname);
-          const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
-          cb(null, fileName);
-        },
+    FileInterceptor('profilePicture', { // Change the field name here
+      storage: new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+          folder: 'profile-pictures',
+          resource_type: 'image',
+          format: async () => 'png',
+          public_id: (req, file) =>
+            `${Date.now()}_${file.originalname.split('.')[0]}`,
+        } as any,
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-          return cb(new BadRequestException('Only image files are allowed!'), false);
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed!'), false);
         }
-        cb(null, true);
       },
     }),
   )
-  async updateProfile(  
-    @UploadedFile() file: Express.Multer.File,  
-    @Body() body: UpdateProfileDto,  
-    @Request() req,  
-    @Res() res: Response,  
-  ) {  
-    const userId = req.session.userId;  
-    const role = req.session.role; // 'user' or 'farmer'  
-  
-    if (!userId || !role) {  
-      return res.status(400).json({ message: 'Invalid session. Please log in again.' });  
-    }  
-  
-    try {  
-      let updateData: UpdateProfileDto;  
-      let updatedProfile;  
-  
-      // Define role-based update logic  
-      if (role === 'farmer') {  
-        updateData = {  
-          ...body,  
-          profilePicture: file ? `uploads/profile-pictures/${file.filename}` : undefined,  
-        };  
-        updatedProfile = await this.farmerService.updateFarmerProfile(userId, updateData);  
-        return res.json({  
-          message: 'Profile updated successfully.',  
-          data: updatedProfile,  
-          redirectUrl: 'farmer_profile',  
-        });  
-      } else if (role === 'user') {  
-        updateData = {  
-          name: body.name,  
-          profilePicture: file ? `uploads/profile-pictures/${file.filename}` : undefined,  
-        };  
-        updatedProfile = await this.userService.updateUserProfile(userId, updateData);  
-        return res.json({  
-          message: 'Profile updated successfully.',  
-          data: updatedProfile,  
-          redirectUrl: 'user_profile',  
-        });  
-      } else {  
-        return res.status(400).json({ message: 'Invalid role specified' });  
-      }  
-    } catch (error) {  
-      console.error('Error updating profile:', error);  
-      res.status(500).json({ message: 'Error updating profile', error: error.message });  
-    }  
+    async updateProfile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: UpdateProfileDto,
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    const userId = req.session.userId;
+    const role = req.session.role; // 'user' or 'farmer'
+
+    if (!userId || !role) {
+      return res.status(400).json({ message: 'Invalid session. Please log in again.' });
+    }
+
+    try {
+      let updateData: UpdateProfileDto = { ...body };
+
+      if (file) {
+        // Store the secure URL of the uploaded image in the database
+        updateData.profilePicture = file.path;
+      }
+
+      let updatedProfile;
+
+      // Define role-based update logic
+      if (role === 'farmer') {
+        updatedProfile = await this.farmerService.updateFarmerProfile(userId, updateData);
+        return res.redirect('farmer_profile');
+      } else if (role === 'user') {
+        updatedProfile = await this.userService.updateUserProfile(userId, updateData);
+        return res.redirect('user_profile');
+      } else {
+        return res.status(400).json({ message: 'Invalid role specified' });
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
   }
 
+  @Post('update-profile-picture')
+  @UseInterceptors(
+    FileInterceptor('profilePicture', {
+      storage: new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+          folder: 'profile-pictures',
+          resource_type: 'image',
+          format: async () => 'png',
+          public_id: (req, file) =>
+            `${Date.now()}_${file.originalname.split('.')[0]}`,
+        } as any,
+      }),
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed!'), false);
+        }
+      },
+    }),
+  )
+  async updateProfilePicture(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    const userId = req.session.userId;
+    const role = req.session.role; // 'user' or 'farmer'
+
+    if (!userId || !role) {
+      return res.status(400).json({ message: 'Invalid session. Please log in again.' });
+    }
+
+    try {
+      let updateData: UpdateProfileDto = {};
+
+      if (file) {
+        // Store the secure URL of the uploaded image in the database
+        updateData.profilePicture = file.path;
+      }
+
+      let updatedProfile;
+
+      // Define role-based update logic
+      if (role === 'farmer') {
+        updatedProfile = await this.farmerService.updateFarmerProfile(userId, updateData);
+        return res.redirect('farmer_profile');
+      } else if (role === 'user') {
+        updatedProfile = await this.userService.updateUserProfile(userId, updateData);
+        return res.redirect('user_profile');
+      } else {
+        return res.status(400).json({ message: 'Invalid role specified' });
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      res.status(500).json({ message: 'Error updating profile picture', error: error.message });
+    }
+  }
+
+  
   @Get('user_profile')
   @Render('user_profile')
   async getUserProfile(@Request() req, @Res() res: Response) {
     const userId = req.session.userId;
-  
+ 
     try {
       const profileData = await this.userService.getUserProfile(userId);
       console.log(profileData);
@@ -466,12 +588,12 @@ export class FarmAppController {
       });
     }
   }
-  
+ 
   @Render('farmer_profile')
   @Get('farmer_profile')
   async getFarmerProfile(@Request() req) {
     const userId = req.session.userId;
-  
+ 
     try {
       const profileData = await this.farmerService.getUserProfile(userId);
       console.log(profileData)
@@ -480,23 +602,7 @@ export class FarmAppController {
       throw new NotFoundException(`Farmer profile not found for userId: ${userId}`);
     }
   }
-
-  
-  @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string) {
-    await this.AuthService.handlePasswordReset(email);
-    return { message: 'Reset email sent' };
-  }
-
-  @Post('reset-password')
-  async resetPassword(
-    @Body('token') token: string,
-    @Body('newPassword') newPassword: string,
-  ) {
-    await this.AuthService.handlePasswordReset(null, token, newPassword);
-    return { message: 'Password has been reset' };
-  }
-
+ 
   @Post('logout')
   logout(@Req() req, @Res() res: Response): void {
     req.logout((err) => {
@@ -509,7 +615,4 @@ export class FarmAppController {
       });
     });
   } 
-
-
-   
-} 
+}

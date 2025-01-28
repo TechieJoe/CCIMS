@@ -33,10 +33,9 @@
 
   <%- include('navBar') %>
 
-  <h1>Your Cart</h1>
   <div id="cartItems">
     <% if (cart.items.length === 0) { %>
-      <p>Your cart is empty</p>
+    <center> <p>Your cart is empty</p> </center> 
     <% } else { %>
       <% cart.items.forEach(item => { %>
         <div class="cart-item">
@@ -58,14 +57,13 @@
       <div>
         <h3>Total Cart Price: $<span id="totalCartPrice"><%= cart.totalPrice.toFixed(2) %></span></h3>
       </div>
+      <button onclick="checkout()">Checkout</button>
     <% } %>
   </div>
 
   <div id="cartData" style="display:none;">
     <%= JSON.stringify(cart.items) %>
   </div>
-
-  <button onclick="checkout()">Checkout</button>
 
   <script>
     // Function to adjust quantity and update the total price and the database

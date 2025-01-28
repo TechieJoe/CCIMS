@@ -64,6 +64,24 @@
       cursor: pointer;
     }
 
+    .notification-icon {
+      height: 24px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .notification-count {
+      background-color: red;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 12px;
+      position: absolute;
+      top: 12px;
+      right: 970px;
+      display: none;
+    }
+
     /* Result section styles */
     .results {
       padding: 20px;
@@ -128,7 +146,8 @@
   
       <div class="notification">
         <a href="notification"> <!-- Link to the notification page -->
-          <img src="/icons/icons8-notification-bell-24.png" alt="notification">
+          <img src="/icons/icons8-notification-bell-24.png" alt="notification" class="notification-icon">
+          <span id="notificationCount" class="notification-count"></span>
         </a>
       </div>
 
@@ -141,10 +160,10 @@
       <!-- Conditionally render either the become a farmer or upload link -->
       <div class="farmer-actions">
         <a id="farmerLink" href="farmer" style="display: none;">
-          <img src="BecomeFarmerIcon.svg" alt="Become a Farmer">
+          <img src="/icons/game-icons--farmer.png" alt="Become a Farmer">
         </a>
         <a id="uploadLink" href="crops" style="display: none;">
-          <img src="Upload.svg" alt="Sell Crop">
+          <img src="/icons/Upload.svg" alt="Sell Crop">
         </a>
       </div>
     </nav>
@@ -227,6 +246,25 @@ window.addEventListener('DOMContentLoaded', () => {
     if (query) {
       fetchSearchResults(query);
     }
+
+    async function fetchUnreadNotificationsCount() {
+      try {
+        const response = await fetch('/farm-app/unread-notifications-count');
+        const data = await response.json();
+        const notificationCountElement = document.getElementById('notificationCount');
+        if (data.count > 0) {
+          notificationCountElement.textContent = data.count;
+          notificationCountElement.style.display = 'inline-block';
+        } else {
+          notificationCountElement.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error fetching unread notifications count:', error);
+      }
+    }
+
+    // Fetch the unread notifications count when the page loads
+    document.addEventListener('DOMContentLoaded', fetchUnreadNotificationsCount);
   </script>
 </body>
 </html>

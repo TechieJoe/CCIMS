@@ -1,33 +1,29 @@
 import { BadRequestException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { comparePwd, encodedPwd } from 'src/utils/bcrypt';
-import { AddCartItemDto, CartItemDto, UpdateItemDto } from 'src/utils/dtos/cart';
-import { signupDto } from 'src/utils/dtos/signup';
-import { Roles } from 'src/utils/ROLES/roles';
-import { Cart } from 'src/utils/schemas/cart';
-import { createCrop } from 'src/utils/schemas/createCrop';
-import { farmer } from 'src/utils/schemas/farmers';
-import { Order, OrderItem } from 'src/utils/schemas/orders';
-import { User } from 'src/utils/schemas/user';
+import { comparePwd, encodedPwd } from '../utils/bcrypt';
+import { AddCartItemDto, CartItemDto, UpdateItemDto } from '../utils/dtos/cart';
+import { signupDto } from '../utils/dtos/signup';
+import { Roles } from '../utils/ROLES/roles';
+import { Cart } from '../utils/schemas/cart';
+import { createCrop } from '../utils/schemas/createCrop';
+import { Order, OrderItem } from '../utils/schemas/orders';
+import { User } from '../utils/schemas/user';
 import axios from 'axios';
 import * as crypto from 'crypto';
-import { OrderDto } from 'src/utils/dtos/order';
-import { createCropDto } from 'src/utils/dtos/createCrop';
-import * as Mandrill from 'mandrill-api/mandrill';
-import { Notification } from 'src/utils/schemas/notification';
+import { OrderDto } from '../utils/dtos/order';
+import { createCropDto } from '../utils/dtos/createCrop';
+import { Notification } from '../utils/schemas/notification';
 import { Types } from 'mongoose';
-import { CreateNotificationDto } from 'src/utils/dtos/notification';
-import { UpdateProfileDto } from  'src/utils/dtos/profile'
+import { CreateNotificationDto } from '../utils/dtos/notification';
+import { UpdateProfileDto } from  '../utils/dtos/profile'
+
 
 @Injectable()
 export class userService {
 
-  private mandrillClient;
 
-  constructor(@InjectModel(User.name) private userModel: Model<User>, @InjectModel(farmer.name) private farmerModel: Model<farmer>, @InjectModel(createCrop.name) private cropModel: Model<createCrop>, @InjectModel(Cart.name) private cartModel: Model<Cart>,  @InjectModel(Order.name) private orderModel: Model<Order>,  @InjectModel(Notification.name) private readonly notificationModel: Model<Notification>){
-    this.mandrillClient = new Mandrill.Mandrill(process.env.MANDRILL_API_KEY); // Ensure you have set this in .env
-  }
+  constructor(@InjectModel(User.name) private userModel: Model<User>, @InjectModel(createCrop.name) private cropModel: Model<createCrop>, @InjectModel(Cart.name) private cartModel: Model<Cart>,  @InjectModel(Order.name) private orderModel: Model<Order>,  @InjectModel(Notification.name) private readonly notificationModel: Model<Notification>){}
     
   async register(signupDto: signupDto): Promise<User> {
     const { name, password, email } = signupDto;
@@ -59,17 +55,6 @@ export class userService {
     }
     return null;
   }
-
-  
-  async searchAll(query: string) {
-    const crops = await this.cropModel
-      .find({ cropName: new RegExp(query, 'i') }) // Case-insensitive search
-      .populate('farmId', 'farmName state LGA') // Populate specific fields from Farmer
-      .exec();
-  
-    return { crops };
-  }
-      
 
   async addOrUpdateCartItem(userId: string, addCartItemDto: AddCartItemDto): Promise<Cart> {
     // Find the cart for the given user
@@ -226,7 +211,6 @@ export class userService {
   // Method to process the order
   async processOrder(OrderDto: OrderDto, userId: string, email: string): Promise<string> {
 
-    console.log(OrderDto)
     // Verify and prepare order items from the cart
     const orderItems = await this.verifyAndProcessOrder(userId);
 
@@ -310,6 +294,7 @@ export class userService {
                       - "Price: ${crop.amountPerBag}"
                       - "Total ${crop.amountPerBag * quantity}"`,
 
+            imageUrl: crop.imageUrl, // Include the crop image URL
             isRead: false, // Default unread status
           };
           console.log(userNotification)
@@ -322,6 +307,7 @@ export class userService {
             message: `Your crop "${crop.cropName}" has been purchased.\n
                       - Quantity Sold: ${quantity}\n
                       - Remaining Stock: ${crop.quantity}\n`,
+            imageUrl: crop.imageUrl, // Include the crop image URL
             isRead: false,
           };
           await this.createNotification(farmerNotification);
@@ -333,6 +319,7 @@ export class userService {
               userId: crop.farmId._id.toString(),
               title: 'Crop Depleted',
               message: `Your crop "${cropName}" has been sold out and removed from the platform.`,
+              imageUrl: crop.imageUrl, // Include the crop image URL
               isRead: false,
             };
             await this.createNotification(deleteNotification);
@@ -344,6 +331,7 @@ export class userService {
               userId: crop.farmId._id.toString(),
               title: 'Low Stock Alert',
               message: `Your crop "${cropName}" stock is low (${crop.quantity} left). Please update your inventory to avoid removal.`,
+              imageUrl: crop.imageUrl, // Include the crop image URL
               isRead: false,
             };
             await this.createNotification(lowStockNotification);
@@ -365,17 +353,22 @@ export class userService {
       await newNotification.save();
     }
   
-    async getNotifications(userId: string) {
+    async getNotifications(userId: string, farmId?: string) {
       const user = await this.userModel.findById(userId).exec();
       if (!user) {
         throw new NotFoundException(`User not found for userId: ${userId}`);
       }
-  
-      const notifications = await this.notificationModel.find({ userId }).exec();
-  
+    
+      let notifications;
+      if (user.role === 'farmer' && farmId) {
+        notifications = await this.notificationModel.find({ userId: farmId }).exec();
+      } else {
+        notifications = await this.notificationModel.find({ userId }).exec();
+      }
+    
       const userNotifications = notifications.filter(notification => user.role === 'user');
       const farmerNotifications = notifications.filter(notification => user.role === 'farmer');
-  
+    
       return {
         userNotifications,
         farmerNotifications,
@@ -387,6 +380,22 @@ export class userService {
       await this.notificationModel.findByIdAndUpdate(notificationId, { isRead: true });
     }
 
+    async getUnreadNotificationsCount(userId: string, farmId?: string): Promise<number> {
+      const user = await this.userModel.findById(userId).exec();
+      if (!user) {
+        throw new NotFoundException(`User not found for userId: ${userId}`);
+      }
+    
+      let count;
+      if (user.role === 'farmer' && farmId) {
+        count = await this.notificationModel.countDocuments({ userId: farmId, isRead: false }).exec();
+      } else {
+        count = await this.notificationModel.countDocuments({ userId, isRead: false }).exec();
+      }
+    
+      return count;
+    }
+  
   // Method to clear the user's cart after payment
   private async clearUserCart(userId: string): Promise<void> {
     // Find the user's cart and remove all items
@@ -469,27 +478,7 @@ export class userService {
   private async updateOrderStatus(reference: string, status: string): Promise<void> {
     await this.orderModel.updateOne({ transactionReference: reference }, { status });
   }
-
-  // Method to send an email using Mandrill
-  private async sendEmail(to: string, subject: string, text: string, from: string = 'your-email@example.com'): Promise<void> {
-    const message = {
-    from_email: from,
-    subject: subject,
-    text: text,
-    to: [{ email: to, type: 'to' }],
-  };
-
-  return new Promise((resolve, reject) => {
-    this.mandrillClient.messages.send({ message }, (result) => {
-    resolve(result);
-    }, (error) => {
-      reject(error);
-    });
-
-    });
-
-  }
-
+  
   // Method to clear the cart after successful payment
   async clearCart(userId: string): Promise<void> {
   await this.cartModel.deleteMany({ userId }); // Delete all items in the cart for the specific user
@@ -536,7 +525,5 @@ export class userService {
     console.log(`User updated successfully: ${savedUser}`);
     return savedUser;
   }
-    
-
     
 }
