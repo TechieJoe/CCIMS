@@ -27,6 +27,12 @@
     .quantity-controls button {
       margin: 0 5px;
     }
+    .empty-cart {
+      text-align: center;
+      padding: 20px;
+      font-size: 18px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -35,7 +41,7 @@
 
   <div id="cartItems">
     <% if (cart.items.length === 0) { %>
-    <center> <p>Your cart is empty</p> </center> 
+      <p class="empty-cart">Your cart is empty</p>
     <% } else { %>
       <% cart.items.forEach(item => { %>
         <div class="cart-item">
@@ -57,13 +63,16 @@
       <div>
         <h3>Total Cart Price: $<span id="totalCartPrice"><%= cart.totalPrice.toFixed(2) %></span></h3>
       </div>
-      <button onclick="checkout()">Checkout</button>
     <% } %>
   </div>
 
   <div id="cartData" style="display:none;">
     <%= JSON.stringify(cart.items) %>
   </div>
+
+  <% if (cart.items.length > 0) { %>
+    <button onclick="checkout()">Checkout</button>
+  <% } %>
 
   <script>
     // Function to adjust quantity and update the total price and the database
